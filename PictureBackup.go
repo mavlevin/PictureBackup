@@ -9,6 +9,8 @@ import (
 	"io"
 )
 
+const verboseDebug = false
+
 func wantToBackupFile(testPath string) bool {
 	switch path.Ext(testPath)[1:] {
 	case
@@ -93,6 +95,32 @@ func accommodatedCopyFile(src, dst string) (int64, error) {
         return nBytes, err
 }
 
+const totalCompletionStatusPrints = 10
+var completionStatusPrints [totalCompletionStatusPrints+1]bool 
+// +1 because start indexing from 1, to ignore 0% done
+
+func logCompletionStatus(done, total int64) {
+	percentDone := (float64(done) / float64(total))*100
+	if verboseDebug{
+		log.Println("Done", percentDone, "%")
+	}
+
+	printEveryPercent := float64(100.0) / totalCompletionStatusPrints
+	completionStatusPrintNumber := int(percentDone / printEveryPercent)
+
+	if(!completionStatusPrints[completionStatusPrintNumber]) {
+		// first take care of a file that completed >1 milestones
+		for i := 1; i < completionStatusPrintNumber; i++ {
+			if !completionStatusPrints[i] {
+			log.Printf("Done %.2f%%\n", float64(i)*printEveryPercent)
+			completionStatusPrints[i] = true
+			}
+		}
+		log.Printf("Done %.2f%%\n", percentDone)
+		completionStatusPrints[completionStatusPrintNumber] = true
+	}
+}
+
 func backupPaths(srcRootPaths []string, dstRootPath string) error {
 
 	log.Println("[i] Calculating backup size")
@@ -100,7 +128,7 @@ func backupPaths(srcRootPaths []string, dstRootPath string) error {
 	if 0 == bytesToTransfer {
 		return fmt.Errorf("0 bytes to backup")
 	}
-	log.Println("[i] Backup size:", bytesToTransfer, "bytes")
+	log.Println("[+] Backup size:", bytesToTransfer, "bytes")
 
 	log.Println("[i] Copying files")
 	var bytesTransfered int64 = 0
@@ -125,18 +153,20 @@ func backupPaths(srcRootPaths []string, dstRootPath string) error {
 				log.Println("[E] buildDestPath() error:", err)
 				return nil
 			}
-			log.Println("[i] Will copy '", p, "' to '", dstPath, "'")
+			if verboseDebug {
+				log.Println("[i] Will copy '", p, "' to '", dstPath, "'")				
+			}
 			nBytes, err := accommodatedCopyFile(p, dstPath)
 			bytesTransfered += nBytes
 			if err != nil {
 				log.Println("[E] accommodatedCopyFile() error:", err)
 			}
-			
+			logCompletionStatus(bytesTransfered, bytesToTransfer)
 			return nil
 		})
 	}
 
-	log.Println("[i] Done")
+	log.Println("[+] Done backing up files")
 	return nil
 }
 
