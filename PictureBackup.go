@@ -183,12 +183,40 @@ func ensureValidDirs(dirPaths ...string) {
 	}
 }
 
-func main() {
-	bkupPaths := []string{`C:\Users\Guy\Desktop\temp\bkuptest`}
-	dstPath := `C:\Users\Guy\Desktop\temp\bkupdest`
 
-	ensureValidDirs(bkupPaths...)
+func main() {
+	fmt.Println("Enter backup destination path: ")
+	var dstPath string
+	fmt.Scanln(&dstPath)
 	ensureValidDirs(dstPath)
+
+	var bkupPaths []string
+	for {
+		fmt.Println("Enter a backup source path or 'done' to finish: ")
+		var srcPath string
+		fmt.Scanln(&srcPath)
+		if srcPath == "done" {
+			break
+		}
+		bkupPaths = append(bkupPaths, srcPath)
+	}
+	ensureValidDirs(bkupPaths...)
+
+	fmt.Println("Will backup from")
+	for _, sp := range(bkupPaths) {
+		fmt.Printf("\t%s\n", sp)
+	}
+	fmt.Println("To")
+	fmt.Printf("\t%s\n", dstPath)
+
+	fmt.Println("Enter 'c' to confirm")
+	var confirm string
+	fmt.Scanln(&confirm)
+	if confirm != "c" {
+		log.Println("MUST CONFIRM TO CONTINUE")
+		return
+	}
+
 	err := backupPaths(bkupPaths, dstPath)
 	if err != nil {
 		log.Println("[E] backupPaths() error:", err)
