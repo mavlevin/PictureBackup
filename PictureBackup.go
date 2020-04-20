@@ -7,36 +7,37 @@ import (
 	"path"
 	"path/filepath"
 	"io"
+	"bufio"
 )
 
 const verboseDebug = false
 
 func wantToBackupFile(testPath string) bool {
-	switch path.Ext(testPath)[1:] {
+	switch path.Ext(testPath) {
 	case
-		"png",
-		"jpg",
-		"jpeg",
-		"bmp",
-		"gif",
-		"tiff",
-		"avi",
-		"mpg",
-		"mpeg",
-		"m1v",
-		"mp2",
-		"mpe",
-		"m3u",
-		"ivf",
-		"mov",
-		"mp4",
-		"m4v",
-		"mp4v",
-		"3g2",
-		"3gp2",
-		"3gp",
-		"3gpp",
-		"m2ts":
+		".png",
+		".jpg",
+		".jpeg",
+		".bmp",
+		".gif",
+		".tiff",
+		".avi",
+		".mpg",
+		".mpeg",
+		".m1v",
+		".mp2",
+		".mpe",
+		".m3u",
+		".ivf",
+		".mov",
+		".mp4",
+		".m4v",
+		".mp4v",
+		".3g2",
+		".3gp2",
+		".3gp",
+		".3gpp",
+		".m2ts":
 		return true
 	}
 	return false
@@ -185,16 +186,24 @@ func ensureValidDirs(dirPaths ...string) {
 
 
 func main() {
+	in := bufio.NewReader(os.Stdin)
+
 	fmt.Println("Enter backup destination path: ")
-	var dstPath string
-	fmt.Scanln(&dstPath)
+	dstPath, err := in.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	dstPath = dstPath[:len(dstPath)-1]
 	ensureValidDirs(dstPath)
 
 	var bkupPaths []string
 	for {
 		fmt.Println("Enter a backup source path or 'done' to finish: ")
-		var srcPath string
-		fmt.Scanln(&srcPath)
+		srcPath, err := in.ReadString('\n')
+		srcPath = srcPath[:len(srcPath)-1]
+		if err != nil {
+			panic(err)
+		}
 		if srcPath == "done" {
 			break
 		}
@@ -217,7 +226,7 @@ func main() {
 		return
 	}
 
-	err := backupPaths(bkupPaths, dstPath)
+	err = backupPaths(bkupPaths, dstPath)
 	if err != nil {
 		log.Println("[E] backupPaths() error:", err)
 	}
